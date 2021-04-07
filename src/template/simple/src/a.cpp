@@ -1,1 +1,3 @@
-int main(void){}
+extern "C"{
+void hello(){}
+}
