@@ -89,8 +89,8 @@ SRC:=$(shell find $(SRCDIR) -name '*.c' -o -name '*.cpp')
 OBJROOT=./obj
 OBJDIR=$(OBJROOT)/$(TGT_MACHINE)/
 OBJS=$(addprefix $(OBJDIR),$(patsubst %.c,%.o ,$(patsubst %.cpp,%.o,$(SRC))))
-#BINNAM=$(CURRENTDIRNAM)
 BINNAM=index
+#BINNAM=$(CURRENTDIRNAM)
 BUILDROOT=build
 BINDIR=$(BUILDROOT)/$(TGT_MACHINE)/
 BIN=$(BINDIR)$(BINNAM)$(BINEXT)
@@ -127,8 +127,9 @@ else
 	UPX=echo skipping upx
 endif
 CXXFLAGS+=-Wall
-CXXFLAGS+=-O3
+CXXFLAGS+=-O1
 #CXXFLAGS+=-O3
+#CXXFLAGS+=-Os
 CXXFLAGS+=-I./src
 #CXXFLAGS+=--emrun
 #CXXFLAGS+=-s WASM=1
@@ -141,12 +142,18 @@ CXXFLAGS+=-I./src
 #CXXFLAGS+=-s ALLOW_MEMORY_GROWTH
 #CXXFLAGS+=-s STANDALONE_WASM
 #LDFLAGS+=-emrun
+LDFLAGS+=--no-entry
+#LDFLAGS+=--emrun
 LDFLAGS+=-s WASM=1
 #LDFLAGS+=-s EXPORTED_FUNCTIONS='["_seven","_call_imp0","_call_imp1"]' 
 LDFLAGS+=-s EXPORTED_FUNCTIONS='[]' 
 #LDFLAGS+=-s ONLY_MY_CODE=1
 LDFLAGS+=-s STANDALONE_WASM
 LDFLAGS+=-s ERROR_ON_UNDEFINED_SYMBOLS=0
+#LDFLAGS+=-mbulk-memory
+#LDFLAGS+=-matomics
+#LDFLAGS+=-Wl,-mbuild-memory
+#LDFLAGS+=-Wl,--shared-memory
 #LDFLAGS+=-s SIDE_MODULE=1
 #LDFLAGS+=-s MODULARIZE=1
 #LDFLAGS+=-s ONLY_MY_CODE=1
@@ -198,11 +205,11 @@ all:$(RUNSCRIPT)
 $(BIN):$(OBJS)
 	@echo "generating $@..."
 	@-$(MKDIR) -p $(@D)
-	$(CXX) \
+	@$(CXX) \
 		$(OBJS) \
 		$(LDFLAGS) \
 		-o $(BIN) 
-	$(CP) -r ./res/* $(BINDIR)
+	@$(CP) -r ./res/* $(BINDIR)
 $(OBJDIR)%.o: %.c
 	@echo "generating $@..."
 	@-$(MKDIR) -p $(@D)
@@ -213,7 +220,7 @@ $(OBJDIR)%.o: %.c
 $(OBJDIR)%.o: %.cpp
 	@echo "generating $@..."
 	@-$(MKDIR) -p $(@D)
-	$(CXX)\
+	@$(CXX)\
 		$(CXXFLAGS)\
 		-c $<\
 		-o $@
@@ -243,6 +250,7 @@ $(RUNSCRIPT):compress
 endif
 run:$(BIN)
 	@echo "running $(BIN)..."
+	@$(CP) -r ./res/* $(BINDIR)
 	@$(EMRUN) --no_browser --host=$(HOST) --port=$(PORT)  --serve_root=$(BINDIR) $(BIN)
 .phony:clean sta
 clean:
